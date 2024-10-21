@@ -1,5 +1,8 @@
 #![no_std]
 #![no_main]
+#![forbid(unsafe_code)]
+
+use aya_ebpf::cgroup_skb_egress_bindings::iphdr;
 
 use aya_ebpf::{
     macros::{cgroup_skb, map},
@@ -10,12 +13,6 @@ use memoffset::offset_of;
 
 use cgroup_skb_egress_common::PacketLog;
 
-#[allow(non_upper_case_globals)]
-#[allow(non_snake_case)]
-#[allow(non_camel_case_types)]
-#[allow(dead_code)]
-mod bindings;
-use bindings::iphdr;
 
 #[map]
 static EVENTS: PerfEventArray<PacketLog> = PerfEventArray::new(0);
@@ -33,11 +30,11 @@ pub fn cgroup_skb_egress(ctx: SkBuffContext) -> i32 {
 
 // (2)
 fn block_ip(address: u32) -> bool {
-    unsafe { BLOCKLIST.get(&address).is_some() }
+    BLOCKLIST.get_corrupt_u32(&address).is_some()
 }
 
 fn try_cgroup_skb_egress(ctx: SkBuffContext) -> Result<i32, i64> {
-    let protocol = unsafe { (*ctx.skb.skb).protocol };
+    let protocol = ctx.skb.protocol();
     if protocol != ETH_P_IP {
         return Ok(1);
     }
@@ -60,5 +57,5 @@ const ETH_P_IP: u32 = 8;
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
+    unreachable!()
 }
