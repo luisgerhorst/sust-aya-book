@@ -16,7 +16,7 @@ use cgroup_skb_egress_common::PacketLog;
 
 #[derive(Debug, Parser)]
 struct Opt {
-    #[clap(short, long, default_value = "/sys/fs/cgroup/unified")]
+    #[clap(short, long, default_value = "/sys/fs/cgroup/aya-book-cgroup-skb-egress")]
     cgroup_path: String,
 }
 
