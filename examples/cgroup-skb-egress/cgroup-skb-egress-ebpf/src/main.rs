@@ -21,6 +21,7 @@ use core::mem::ManuallyDrop;
 #[map]
 static EVENTS: PerfEventArray<PacketLog> = PerfEventArray::new(0);
 
+// TODO: make this work with unpriv. eBPF (perm. denied creating map)
 #[map] // (1)
 static BLOCKLIST: HashMap<u32, EbpfAtomicI64> = HashMap::with_max_entries(1024, 0);
 
@@ -119,6 +120,7 @@ fn try_cgroup_skb_egress(ctx: SkBuffContext) -> Result<i32, i64> {
     // Leak ctx location
     //
     // Rejected by eBPF verifier (fc41) if num is 32-bit: invalid size of register spill
+    // Accepted by priv. eBPF verifier, leaks pointer to map.
     let num = transmute(ctx);
     //
     // Rejected by Rust compiler:
