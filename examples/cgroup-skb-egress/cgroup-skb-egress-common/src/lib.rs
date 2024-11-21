@@ -4,7 +4,7 @@
 #[derive(Clone, Copy)]
 pub struct PacketLog {
     pub ipv4_address: u32,
-    pub action: i32,
+    pub action: u64,
 }
 
 #[cfg(feature = "user")]

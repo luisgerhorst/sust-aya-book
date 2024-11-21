@@ -14,6 +14,24 @@ use tokio::{signal, task};
 
 use cgroup_skb_egress_common::PacketLog;
 
+//  TODO: Include ebpf version, do not duplicate code.
+#[derive(Copy, Clone)]
+pub struct EbpfAtomicI64 {
+    value: i64,
+    zero: i64,
+}
+
+impl Default for EbpfAtomicI64 {
+    fn default() -> EbpfAtomicI64 {
+        EbpfAtomicI64 {
+            value: 0,
+            zero: 0,
+        }
+    }
+}
+
+unsafe impl aya::Pod for EbpfAtomicI64 {}
+
 #[derive(Debug, Parser)]
 struct Opt {
     #[clap(short, long, default_value = "/sys/fs/cgroup/aya-book-cgroup-skb-egress")]
@@ -50,13 +68,13 @@ async fn main() -> Result<(), anyhow::Error> {
         CgroupAttachMode::Single,
     )?;
 
-    let mut blocklist: HashMap<_, u32, u32> =
+    let mut blocklist: HashMap<_, u32, EbpfAtomicI64> =
         HashMap::try_from(bpf.map_mut("BLOCKLIST").unwrap())?;
 
     let block_addr: u32 = Ipv4Addr::new(1, 1, 1, 1).try_into()?;
 
     // (3)
-    blocklist.insert(block_addr, 0, 0)?;
+    blocklist.insert(block_addr, EbpfAtomicI64::default(), 0)?;
 
     let mut perf_array =
         AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
